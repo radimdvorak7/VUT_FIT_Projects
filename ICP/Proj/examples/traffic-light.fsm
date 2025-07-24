@@ -1,0 +1,23 @@
+FSM Name:
+    TrafficLight
+Comment:
+    Controls a traffic light with pedestrian and emergency inputs
+Inputs:
+    EmergencySignal
+Outputs:
+    LightColor
+    PedestrianSignal
+Variables (available at runtime):
+    redTimeout = 5000;
+    greenTimeout = 5000;
+    yellowTimeout = 1000;
+States and its actions (first one is start state):
+    Red [161, 45] : { output("LightColor", 1 ); output("PedestrianSignal", 1); }
+    Green [160, 222] : { output("LightColor", 2 ); output("PedestrianSignal", 2); }
+    Yellow [280, 128] : { output("LightColor", 3); output("PedestrianSignal", 3); }
+Transitions with their conditions:
+    Red --> Green:  if( @redTimeout )
+    Green --> Yellow:  if( @greenTimeout )
+    Yellow --> Red:  if( @yellowTimeout )
+    Green --> Red:  if( EmergencySignal == 1 )
+    Yellow --> Red:  if( EmergencySignal == 1 )

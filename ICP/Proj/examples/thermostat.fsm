@@ -1,0 +1,28 @@
+FSM Name:
+    Thermostat
+Comment:
+    Controls a home thermostat to maintain temperature based on sensor readings
+Inputs:
+    turnOn
+    Mode
+    turnOff
+Outputs:
+    Heater
+    Cooler
+    Done
+Variables (available at runtime):
+    heating = 5000;
+    cooling = 5000;
+States and its actions (first one is start state):
+    Idle [401, 264] : { output("Heater", 0); output("Cooler", 0); }
+    Heating [347, 142] : { output("Heater", 1); output("Cooler", 0); }
+    Cooling [291, 26] : { output("Heater", 0); output("Cooler", 1); }
+    SetMode [169, 154] : {  }
+    Finish [460, 40] : { output("Done", elapsed); }
+Transitions with their conditions:
+    Idle --> SetMode:  if( turnOn == 1 )
+    SetMode --> Heating:  if( Mode == 1 )
+    SetMode --> Cooling:  if( Mode == 0 )
+    Heating --> Finish:  if( @heating )
+    Cooling --> Finish:  if( @cooling )
+    Finish --> Idle:  if( turnOff == 1 )

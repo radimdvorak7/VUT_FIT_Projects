@@ -1,0 +1,30 @@
+Zadani c. 70:
+Uvazujte dvourozmerny obdelnikovy stavovy prostor o rozmerech 4 x 5
+s temito indexy jednotlivych stavu:
+
+      1      2      3      4      5
+      6      7      8      9     10
+     11     12     13     14     15
+     16     17     18     19     20
+
+Dale uvazujte, ze aktualni ohodnoceni jednotlivych stavu po predchozich
+prochazkach jsou nasledujici:
+
+ -0.014 -0.053 -0.012  0.190  0.008
+ -0.031 -0.111 -0.090  0.000  0.391
+ -0.230  0.000 -0.106  0.142  0.080
+ -0.067 -0.446 -0.137 -0.023  0.014
+
+Zadoucim cilovym stavem je stav 9 (reward=1) a nezadoucim cilovym stavem
+je stav 12 (reward=-1). Odmeny ve vsech ostatnich stavech jsou nulove.
+Metodou TD-learning s koeficienty alpha=0.1 a gamma=0.8 vypocitejte nova
+ohodnoceni vsech stavu po prochazce stavy 1 2 7 8 13 18 19 14 15 10 9 
+a vysledek zapiste na radcich c. 27, 28, 29 a 30 ve formatu stejnem jako 
+vyse, tj. ve tvaru matice s cisly zaokrouhlenymi na tri desetinna mista.
+
+Reseni:
+ 
+ -0.017 -0.057 -0.012  0.190  0.008
+ -0.031 -0.107 -0.089  0.000  0.452
+ -0.230  0.000 -0.106  0.134  0.103
+ -0.067 -0.446 -0.125 -0.009  0.014

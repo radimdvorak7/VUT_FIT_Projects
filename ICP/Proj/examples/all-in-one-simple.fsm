@@ -1,0 +1,22 @@
+FSM Name:
+    name
+Comment:
+    comment
+Inputs:
+    IN
+    IN2
+Outputs:
+    OUT
+    OUT2
+Variables (available at runtime):
+    timeout = 3000
+    timeout2 = 5000
+States and its actions (first one is start state):
+    START [213, 233] : {  }
+    END2 [103, 78] : { output("OUT2", 1);output("OUT", 2); }
+    END [403, 93] : { output("OUT", 1); output("OUT2", elapsed); }
+Transitions with their conditions:
+    START --> END:  if( @timeout )
+    END --> END2:  if( IN2 == 1 )
+    END2 --> START:  if( IN2 == 0 )
+    END2 --> END2:  if( IN == 1 )
