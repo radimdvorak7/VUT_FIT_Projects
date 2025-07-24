@@ -1,0 +1,227 @@
+#!/bin/sh
+# IOS Projekt 1
+# FIT VUT                
+# xdvorar00, Radim Dvořák
+# 17.03.2024
+
+export POSIXLY_CORRECT=yes
+export LC_ALL=C
+
+set -e
+
+#Prints help message
+help() { 
+    printf "Usage:              xtf [-h|--help] [FILTERS] [COMMAND] USER LOG [LOG]...\n
+-h|--help:          Prints this help message
+
+FILTERS:
+-a                  Filter out date only after this date
+-b                  Filter out date only before this date
+-c                  Filter by currency
+
+COMMAND:
+list                Prints records for the given USER
+currency-list       List of the sorted list of occurring currencies
+status              Statement of the actual balance of the asociated by individual currencies
+profit              Statement of the USER account balance with calculated fictitious income
+
+If the script receives no command on input, consider the default list command
+
+USER:               User to filter records
+
+LOG:                File from which the data is collected\n"
+exit 0 
+}
+
+#Checks validity of arguments and options
+chech_arg() {
+    case "$2" in
+        -*)
+            echo "Argument [$1] is without parameter. Use [-h|--help] for more information." >&2
+            exit 1
+        ;;
+        * )
+        ;;
+    esac
+
+    if [ "$3" = true ]; then
+        echo "Option was entered multiple times. Use [-h|--help] for more information." >&2
+        exit 1
+    fi
+}
+#Exit script when there are too litle arguments
+if [ $# -lt 1 ]; then
+    echo "Too little arguments. Use [-h|--help] for more information." >&2
+    exit 1
+fi
+
+#Function to read content of file
+read_file(){
+    for file in $1
+    do  
+        if echo "$file" | grep -Eq ".+\.gz" ;then
+                zcat "$file"
+            else 
+                echo "$file" | xargs cat
+            fi
+    done
+}
+#Filters out by user
+filter_user(){
+    awk -F ";" -v USER="$USER" '{
+        if("'"$USER_B"'" == "true"){
+            if($1~USER){print $0}
+        }
+        else {print $0}
+    }'
+}
+
+#Filters out by currency
+filter_currency(){
+    awk -F ";" -v curr="$CURRENCY" '{
+        if("'"$CURRENCY_B"'" == "true"){
+            if($3~curr){print $0}
+        }
+        else {print $0}
+    }'
+}
+#Filters out by date
+filter_date(){
+    awk -F ";" -v after="$AFTER_DATE" -v before="$BEFORE_DATE" '{
+        if("'"$AFTER_DATE_B"'" == "true" && "'"$BEFORE_DATE_B"'" == "true"){
+            if($2>after && $2<before){print $0}
+        }
+        else if("'"$AFTER_DATE_B"'" == "true") {
+            if($2>after){print $0}
+        }
+        else if("'"$BEFORE_DATE_B"'" == "true") {
+            if($2<before){print $0}
+        } 
+        else {print $0}
+        }'
+}
+
+#Checks validity of files and if not valid exits
+validate_file(){
+    awk '{
+        if ($0 ~/^[^;]+;[0-9]{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]);[^;]{3};-?[0-9]+\.?[0-9]+$/)
+        {next;}
+        else {exit 1}
+    }' 
+}
+
+################################################
+#                     MAIN                     #
+################################################
+COMMAND_B=false
+AFTER_DATE_B=false
+CURRENCY_B=false
+BEFORE_DATE_B=false
+USER_B=false
+FILES_B=false
+
+DATE_FORMAT="\b[0-9]{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])\ ([01][0-9]|2[0-3])\:([0-5][0-9])\:([0-5][0-9])\b"
+CURRENCY_FORMAT="\b[A-Za-z]{3}\b"
+
+if [ -z "$XTF_PROFIT" ];then
+    XTF_PROFIT=20
+fi
+
+#Parsing of arguments
+while [ $# -gt 0 ]; do
+    case "$1" in 
+        -h|--help)
+            help
+        ;;
+        list | list-currency | status | profit)
+            chech_arg "$1" "" "$COMMAND_B"
+            COMMAND_B=true
+            COMMAND="$1"
+            shift
+        ;;
+         -a )
+            chech_arg "$1" "$2" "$AFTER_DATE_B"
+            AFTER_DATE_B=true
+            if echo "$2" | grep -Eq "$DATE_FORMAT" ;then
+                AFTER_DATE="${2}"
+            else 
+                echo "Wrong fromat of date" >&2 
+                exit 1
+            fi
+            shift
+            shift
+        ;;
+         -b )
+            chech_arg "$1" "$2" "$BEFORE_DATE_B"
+            BEFORE_DATE_B=true
+
+            if echo "$2" | grep -Eq "$DATE_FORMAT" ;then
+                BEFORE_DATE="${2}"
+            else 
+                echo "Wrong fromat of date" >&2 
+                exit 1
+            fi
+
+            shift
+            shift
+        ;;
+        -c )
+            chech_arg "$1" "$2" "$CURRENCY_B"
+            CURRENCY_B=true
+            if echo "$2" | grep -Eq "$CURRENCY_FORMAT" ;then
+                CURRENCY="${2}"
+            else 
+                echo "Wrong fromat of currency" >&2 
+                exit 1
+            fi
+            shift
+            shift
+        ;;
+        *)  
+            if [ $USER_B = false ]; then
+                USER_B=true
+                USER="$1"
+                shift
+            else
+                FILES_B=true
+                FILES="${FILES} ${1}"
+                shift
+            fi 
+        ;;
+    esac
+done
+
+#Check if file exist
+if [ "$FILES_B" = false ];then
+    echo "File doesn't exist" >&2
+    exit 1
+fi
+
+#Checks validity of files and if not valid exits
+read_file "$FILES" | validate_file
+
+
+list(){
+    read_file "$FILES" | filter_user | filter_date | filter_currency
+}
+
+status(){
+    list | awk -F ";" '{a[$3] += $4} END{for (i in a) printf "%s : %0.4f\n",i , a[i] | "sort -d -u"}'
+}
+
+if [ "$COMMAND" = "list" ] || [ "$COMMAND_B" = false ]; then
+    list
+elif [ "$COMMAND" = "list-currency" ]; then
+    list |awk -F ";" '{print $3 | "sort -d -u"}'
+elif [ "$COMMAND" = "status" ]; then 
+    status
+elif [ "$COMMAND" = "profit" ]; then 
+    status | awk -F " : " '{
+    if ($2 ~/-.+/){
+        printf "%s : %0.4f\n",$1,$2}
+    else{$2=$2 + ($2*"'"$XTF_PROFIT"'"/100);
+        printf "%s : %0.4f\n",$1,$2}
+    }'
+fi
+
+exit 0
